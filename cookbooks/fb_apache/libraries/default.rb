@@ -43,6 +43,11 @@ module FB
           buf << "#{key} #{val}\n"
         when Hash
           template_hash_handler(buf, indent + 1, key, val)
+        when Array
+          val.each do |entry|
+            buf << indentstr(indent + 1)
+            buf << "#{key} #{entry}\n"
+          end
         end
       end
       buf << indentstr(indent)
