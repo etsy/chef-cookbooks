@@ -224,7 +224,13 @@ if node['platform_family'] == 'debian'
   end
 end
 
+service 'apache_enable' do
+  service_name svc
+  action [:enable]
+end
+
 service 'apache' do
   service_name svc
-  action [:enable, :start]
+  only_if { node['fb_apache']['allow_restart'] }
+  action [:nothing]
 end
