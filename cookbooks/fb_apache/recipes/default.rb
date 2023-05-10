@@ -211,7 +211,6 @@ template "#{confdir}/status.conf" do
   owner node.root_user
   group node.root_group
   mode '0644'
-  variables(:location => '/server-status')
   notifies :verify, 'fb_apache_verify_configs[doit]', :before
   notifies :restart, 'service[apache]'
 end
