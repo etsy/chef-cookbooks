@@ -20,9 +20,12 @@ module FB
 
     def self._get_base_command(node)
       package_manager = node.default_package_manager
-      unless ['yum', 'dnf'].include?(package_manager)
+      unless ['yum', 'dnf', 'apt'].include?(package_manager)
         fail "fb_system_upgrade: default package manager #{package_manager} " +
              'is not supported'
+      end
+      if package_manager == 'apt'
+        package_manager = 'apt-get'
       end
 
       bin = which(package_manager)
@@ -58,10 +61,15 @@ module FB
       base_cmd = FB::SystemUpgrade._get_base_command(node)
 
       exclude_cmd = ''
+      mark_hold_cmd = ''
       exclude_pkgs = node['fb_system_upgrade']['exclude_packages']
 
       unless exclude_pkgs.empty?
-        exclude_cmd << "-x #{exclude_pkgs.join(' -x ')}"
+        if ['yum', 'dnf'].include?(node.default_package_manager)
+          exclude_cmd << "-x #{exclude_pkgs.join(' -x ')}"
+        else
+          mark_hold_cmd = "apt-mark hold #{exclude_pkgs.join(' ')}"
+        end
       end
 
       if node['fb_system_upgrade']['allow_downgrades']
@@ -71,7 +79,7 @@ module FB
       end
       upgrade_cmd = "#{base_cmd} #{dnf_cmd} #{exclude_cmd}"
       log = node['fb_system_upgrade']['log']
-      cmd = "date &>> #{log}; #{upgrade_cmd} &>> #{log}"
+      cmd = "date &>> #{log}; #{base_cmd} update ; #{mark_hold_cmd} &>> #{log} ; #{upgrade_cmd} &>> #{log}"
 
       cmd
     end
