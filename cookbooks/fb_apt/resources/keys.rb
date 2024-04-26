@@ -51,7 +51,8 @@ action :run do
         Chef::Log.debug("fb_apt[keys]: Processing new keyid #{keyid}")
         if key
           execute "add key for #{keyid} to APT" do
-            command "echo '#{key}' | apt-key add -"
+            command "echo '#{key}' | gpg --batch --dearmor -o /etc/apt/keyrings/#{keyid}.gpg"
+            creates "/etc/apt/keyrings/#{keyid}.gpg"
           end
         elsif keyserver
           execute "fetch and add key for keyid #{keyid} to APT" do
