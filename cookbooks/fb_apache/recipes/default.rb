@@ -18,7 +18,9 @@
 # limitations under the License.
 #
 
-raise 'foobar'
+if false
+  raise 'foobar'
+end
 
 node.default['fb_apache']['module_packages']['wsgi'] =
   case node['platform_family']
