@@ -44,10 +44,10 @@ action :verify do
       # This is
       file = Chef::Util::FileEdit.new("#{tdir}/conf/httpd.conf")
       file.search_file_replace_line(%r{^ServerRoot "/etc/httpd"$},
-                                        "ServerRoot \"#{tdir}\"") ||
-            fail('Apache validation failed. Cannot find `ServerRoot /etc/httpd`')
-          file.write_file
-    else node.debian_family?
+                                    "ServerRoot \"#{tdir}\"") ||
+        fail('Apache validation failed. Cannot find `ServerRoot /etc/httpd`')
+      file.write_file
+    elsif node.debian_family?
       # Generate the base apache config before doing the path substitution trickery below.
       build_resource(:template,
                      "#{tdir}/apache2.conf") do
@@ -58,11 +58,10 @@ action :verify do
       end.run_action(:create)
       file = Chef::Util::FileEdit.new("#{tdir}/apache2.conf")
       file.search_file_replace_line(%r{^.?ServerRoot "/etc/apache2"$},
-                                        "ServerRoot \"#{tdir}\"") ||
-            fail('Apache validation failed. Cannot find `ServerRoot /etc/apache2`')
-          file.write_file
+                                    "ServerRoot \"#{tdir}\"") ||
+        fail('Apache validation failed. Cannot find `ServerRoot /etc/apache2`')
+      file.write_file
     end
-
 
     # we manually build the resource so that Chef does not add these to its
     # resource collection and hence not track it for "updates".

@@ -73,8 +73,8 @@ confdir =
   end
 
 baseconfig = value_for_platform_family(
- 'rhel' => "#{httpdir}/conf/httpd.conf",
- 'debian' => "#{httpdir}/apache2.conf",
+  'rhel' => "#{httpdir}/conf/httpd.conf",
+  'debian' => "#{httpdir}/apache2.conf",
 )
 
 sitesdir = value_for_platform_family(
@@ -168,7 +168,7 @@ fb_apache_cleanup_modules 'doit' do
   mod_dir moddir
 end
 
-template "#{baseconfig}" do
+template baseconfig do
   owner 'root'
   group 'root'
   mode '0644'

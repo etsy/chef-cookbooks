@@ -92,7 +92,7 @@ default['fb_apache'] = {
   'sites' => {},
   'status_config' => {
     'Location /server-status' => {
-      'SetHandler' => 'server-status'
+      'SetHandler' => 'server-status',
     },
   },
   'extra_configs' => {},
