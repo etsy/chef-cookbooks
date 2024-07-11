@@ -65,8 +65,8 @@ directory 'runtime state directory' do
   if node.windows?
     rights :full_control, 'Administrators'
   else
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0755'
   end
 end
@@ -74,7 +74,7 @@ end
 include_recipe 'fb_fluentbit::td-agent-bit_rhel' if node.rhel_family?
 include_recipe 'fb_fluentbit::td-agent-bit_windows' if node.windows?
 
-template 'plugins config' do # ~FB031
+template 'plugins config' do
   action :create
   source 'plugins.conf.erb'
   path plugins_file_path
@@ -82,14 +82,14 @@ template 'plugins config' do # ~FB031
     rights :full_control, 'Administrators'
     notifies :restart, 'windows_service[FluentBit]'
   else
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0600'
     notifies :restart, 'service[td-agent-bit]'
   end
 end
 
-template 'parsers config' do # ~FB031
+template 'parsers config' do
   action :create
   source 'parsers.conf.erb'
   path parsers_file_path
@@ -97,8 +97,8 @@ template 'parsers config' do # ~FB031
     rights :full_control, 'Administrators'
     notifies :restart, 'windows_service[FluentBit]'
   else
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0600'
     notifies :restart, 'service[td-agent-bit]'
   end
@@ -113,14 +113,14 @@ remote_file 'remote config' do
     rights :full_control, 'Administrators'
     notifies :restart, 'windows_service[FluentBit]'
   else
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0600'
     notifies :restart, 'service[td-agent-bit]'
   end
 end
 
-template 'local config' do # ~FB031
+template 'local config' do
   not_if { node['fb_fluentbit']['external_config_url'] }
   action :create
   source 'conf.erb'
@@ -129,8 +129,8 @@ template 'local config' do # ~FB031
     rights :full_control, 'Administrators'
     notifies :restart, 'windows_service[FluentBit]'
   else
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0600'
     notifies :restart, 'service[td-agent-bit]'
   end
@@ -138,10 +138,16 @@ end
 
 if node.windows?
   windows_service 'FluentBit' do
-    action :nothing
     if node['fb_fluentbit']['custom_svc_restart_command']
       restart_command node['fb_fluentbit']['custom_svc_restart_command']
     end
+    action :nothing
+  end
+
+  windows_service 'Keep Fluentbit Active' do
+    service_name 'FluentBit'
+    only_if { node['fb_fluentbit']['keep_alive'] }
+    action [:enable, :start]
   end
 else
   service 'td-agent-bit' do

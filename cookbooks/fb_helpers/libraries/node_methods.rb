@@ -36,25 +36,34 @@ class Chef
     end
 
     def _canonical_version(version)
-      if version.class == Integer
-        FB::Version.new(version.to_s)
-      elsif version.class == String
-        FB::Version.new(version)
-      elsif version.class == FB::Version
-        version
-      else
-        fail 'EL Version comparison can only be performed with strings and integers'
+      @canonical_version ||= {}
+
+      @canonical_version.fetch(version) do |ver|
+        @canonical_version[ver] =
+          if ver.class == Integer
+            FB::Version.new(version.to_s)
+          elsif ver.class == String
+            FB::Version.new(version)
+          elsif ver.class == FB::Version
+            version
+          else
+            fail 'fb_helpers: EL Version comparison can only be performed with strings and integers'
+          end
       end
+    end
+
+    def _self_version
+      @self_version ||= FB::Version.new(self['platform_version'])
     end
 
     # Is this a RHEL-compatible OS with a minimum major version number of `version`
     def el_min_version?(version)
-      self.rhel_family? && FB::Version.new(self['platform_version']) >= self._canonical_version(version)
+      self.rhel_family? && self._self_version >= self._canonical_version(version)
     end
 
     # Is this a RHEL-compatible OS with a maximum major version number of `version`
     def el_max_version?(version)
-      self.rhel_family? && FB::Version.new(self['platform_version']) <= self._canonical_version(version)
+      self.rhel_family? && self._self_version <= self._canonical_version(version)
     end
 
     def rhel_family7?
@@ -89,8 +98,16 @@ class Chef
       self.rhel? && self['platform_version'].start_with?('8')
     end
 
+    def rhel8_8?
+      self.rhel? && self['platform_version'].start_with?('8.8')
+    end
+
     def rhel9?
       self.rhel? && self['platform_version'].start_with?('9')
+    end
+
+    def rhel10?
+      self.rhel? && self['platform_version'].start_with?('10')
     end
 
     def centos_min_version?(version)
@@ -103,6 +120,10 @@ class Chef
 
     def centos?
       self['platform'] == 'centos'
+    end
+
+    def centos10?
+      self.centos? && self['platform_version'].start_with?('10')
     end
 
     def centos9?
@@ -165,6 +186,10 @@ class Chef
       self.redhat? && self['platform_version'].start_with?('9')
     end
 
+    def redhat10?
+      self.redhat? && self['platform_version'].start_with?('10')
+    end
+
     def oracle?
       self['platform'] == 'oracle'
     end
@@ -175,6 +200,10 @@ class Chef
 
     def oracle_max_version?(version)
       self.oracle? && self.el_max_version?(version)
+    end
+
+    def oracle9?
+      self.oracle? && self['platform_version'].start_with?('9')
     end
 
     def oracle8?
@@ -239,6 +268,22 @@ class Chef
 
     def fedora36?
       self.fedora? && self['platform_version'] == '36'
+    end
+
+    def fedora37?
+      self.fedora? && self['platform_version'] == '37'
+    end
+
+    def fedora38?
+      self.fedora? && self['platform_version'] == '38'
+    end
+
+    def fedora39?
+      self.fedora? && self['platform_version'] == '39'
+    end
+
+    def fedora40?
+      self.fedora? && self['platform_version'] == '40'
     end
 
     def eln?
@@ -338,6 +383,14 @@ class Chef
       macos? && node['platform_version'].start_with?('13.')
     end
 
+    def macos14?
+      macos? && node['platform_version'].start_with?('14.')
+    end
+
+    def macos15?
+      macos? && node['platform_version'].start_with?('15.')
+    end
+
     def mac_mini_2014?
       macos? && node['hardware']['machine_model'] == 'Macmini7,1'
     end
@@ -354,48 +407,64 @@ class Chef
       self['platform_family'] == 'windows'
     end
 
+    def windows_desktop?
+      windows? && node['kernel']['product_type'] == 'Workstation'
+    end
+
     def windows8?
-      windows? && self['platform_version'].start_with?('6.2')
+      windows_desktop? && self['platform_version'].start_with?('6.2')
     end
 
     def windows8_1?
-      windows? && self['platform_version'].start_with?('6.3')
+      windows_desktop? && self['platform_version'].start_with?('6.3')
     end
 
     def windows10?
-      windows? && self['platform_version'].start_with?('10.0')
+      windows_desktop? && self['platform_version'].start_with?('10.0.1')
+    end
+
+    def windows11?
+      windows_desktop? && self['platform_version'].start_with?('10.0.2')
+    end
+
+    def windows10_or_newer?
+      windows_desktop? && self._self_version >= self._canonical_version('10.0.1')
+    end
+
+    def windows_server?
+      windows? && node['kernel']['product_type'] == 'Server'
     end
 
     def windows2008?
-      windows? && self['platform_version'] == '6.0'
+      windows_server? && self['platform_version'] == '6.0'
     end
 
     def windows2008r2?
-      windows? && self['platform_version'] == '6.1.7600'
+      windows_server? && self['platform_version'] == '6.1.7600'
     end
 
     def windows2008r2sp1?
-      windows? && self['platform_version'] == '6.1.7601'
+      windows_server? && self['platform_version'] == '6.1.7601'
     end
 
     def windows2012?
-      windows? && self['platform_version'].start_with?('6.2')
+      windows_server? && self['platform_version'].start_with?('6.2')
     end
 
     def windows2012r2?
-      windows? && self['platform_version'].start_with?('6.3')
+      windows_server? && self['platform_version'].start_with?('6.3')
     end
 
     def windows2016?
-      windows? && self['platform_version'] == '10.0.14393'
+      windows_server? && self['platform_version'] == '10.0.14393'
     end
 
     def windows2019?
-      windows? && self['platform_version'] == '10.0.17763'
+      windows_server? && self['platform_version'] == '10.0.17763'
     end
 
     def windows2022?
-      windows? && self['platform_version'] == '10.0.20348'
+      windows_server? && self['platform_version'] == '10.0.20348'
     end
 
     # from https://en.wikipedia.org/wiki/Windows_10_version_history
@@ -424,47 +493,55 @@ class Chef
     end
 
     def windows2012_or_newer?
-      windows? && Gem::Version.new(self['platform_version']) >= Gem::Version.new('6.2')
+      windows_server? && self._self_version >= self._canonical_version('6.2')
     end
 
     def windows2012r2_or_newer?
-      windows? && Gem::Version.new(self['platform_version']) >= Gem::Version.new('6.3')
+      windows_server? && self._self_version >= self._canonical_version('6.3')
     end
 
     def windows2016_or_newer?
-      windows? && Gem::Version.new(self['platform_version']) >= Gem::Version.new('10.0.14393')
+      windows_server? && self._self_version >= self._canonical_version('10.0.14393')
     end
 
     def windows2019_or_newer?
-      windows? && Gem::Version.new(self['platform_version']) >= Gem::Version.new('10.0.17763')
+      windows_server? && self._self_version >= self._canonical_version('10.0.17763')
     end
 
     def windows2022_or_newer?
-      windows? && Gem::Version.new(self['platform_version']) >= Gem::Version.new('10.0.20348')
+      windows_server? && self._self_version >= self._canonical_version('10.0.20348')
     end
 
     def windows2012_or_older?
-      windows? && Gem::Version.new(self['platform_version']) < Gem::Version.new('6.3')
+      windows_server? && self._self_version < self._canonical_version('6.3')
     end
 
     def windows2012r2_or_older?
-      windows? && Gem::Version.new(self['platform_version']) < Gem::Version.new('6.4')
+      windows_server? && self._self_version < self._canonical_version('6.4')
     end
 
     def windows2016_or_older?
-      windows? && Gem::Version.new(self['platform_version']) <= Gem::Version.new('10.0.14393')
+      windows_server? && self._self_version <= self._canonical_version('10.0.14393')
     end
 
     def windows2019_or_older?
-      windows? && Gem::Version.new(self['platform_version']) <= Gem::Version.new('10.0.17763')
+      windows_server? && self._self_version <= self._canonical_version('10.0.17763')
     end
 
     def windows2022_or_older?
-      windows? && Gem::Version.new(self['platform_version']) <= Gem::Version.new('10.0.20348')
+      windows_server? && self._self_version <= self._canonical_version('10.0.20348')
     end
 
     def aristaeos?
       self['platform'] == 'arista_eos'
+    end
+
+    def aristaeos_4_28_or_newer?
+      self.aristaeos? && self._self_version >= self._canonical_version('4.28')
+    end
+
+    def aristaeos_4_30_or_newer?
+      self.aristaeos? && self._self_version >= self._canonical_version('4.30')
     end
 
     def embedded?
@@ -921,7 +998,7 @@ class Chef
     end
 
     def root_user
-      value_for_platform(
+      @root_user ||= value_for_platform(
         'windows' => { 'default' => 'Administrator' },
         'default' => 'root',
       )
@@ -930,7 +1007,7 @@ class Chef
     def root_group
       # rubocop:disable Chef/Correctness/InvalidPlatformValueForPlatformHelper
       # See the `macos?` method above
-      value_for_platform(
+      @root_group ||= value_for_platform(
         %w{openbsd freebsd mac_os_x macos} => { 'default' => 'wheel' },
         'windows' => { 'default' => 'Administrators' },
         'default' => 'root',
@@ -960,7 +1037,8 @@ class Chef
 
     # returns the version-release of an rpm installed, or nil if not present
     def rpm_version(name)
-      if (self.centos? && !self.centos7?) || self.fedora? || self.redhat8? || self.oracle8?
+      if (self.centos? && !self.centos7?) || self.fedora? || self.redhat8? || self.oracle8? || self.redhat9? ||
+        self.oracle9? || self.aristaeos_4_30_or_newer?
         # returns epoch.version
         v = Chef::Provider::Package::Dnf::PythonHelper.instance.
             package_query(:whatinstalled, name).version
@@ -1171,6 +1249,13 @@ class Chef
       else
         return self.interface_change_allowed?(interface)
       end
+    end
+
+    # A gate which can be used to limit dangerous code to only run during
+    # provisioning or upon boot
+    def disruptable?
+      @disruptable ||=
+        node.firstboot_any_phase? || ENV['CHEF_BOOT_SERVICE'] == 'true'
     end
   end
 end
