@@ -75,7 +75,7 @@ when 'rhel'
 when 'debian'
   {
     'htcacheclean_run' => 'auto',
-    'htcacheclean_mode' => 'daeon',
+    'htcacheclean_mode' => 'daemon',
     'htcacheclean_size' => '300M',
     'htcacheclean_daemon_interval' => '120',
     'htcacheclean_path' => '/var/cache/apache2/mod_cache_disk',
@@ -90,6 +90,11 @@ default['fb_apache'] = {
   'manage_packages' => true,
   'enable_default_site' => true,
   'sites' => {},
+  'status_config' => {
+    'Location /server-status' => {
+      'SetHandler' => 'server-status'
+    },
+  },
   'extra_configs' => {},
   'modules' => modules,
   'modules_directory' => moddir,

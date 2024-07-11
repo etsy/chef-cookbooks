@@ -72,6 +72,11 @@ confdir =
     end
   end
 
+baseconfig = value_for_platform_family(
+ 'rhel' => "#{httpdir}/conf/httpd.conf",
+ 'debian' => "#{httpdir}/apache2.conf",
+)
+
 sitesdir = value_for_platform_family(
   'rhel' => confdir,
   'debian' => "#{httpdir}/sites-enabled",
@@ -147,10 +152,28 @@ if node.debian? || node.ubuntu?
   end
 end
 
+# By default the apache package installs some default config files which we're probably not interested in
+if node['platform_family'] == 'rhel'
+  %w{autoindex ssl userdir welcome}.each do |file|
+    file "#{sitesdir}/#{file}.conf" do
+      not_if { node['fb_apache']['enable_default_site'] }
+      action :delete
+    end
+  end
+end
+
 # The package comes pre-installed with module configs, but we dropp off our own
 # in fb_modules.conf. Also, we don't want non-Chef controlled module configs.
 fb_apache_cleanup_modules 'doit' do
   mod_dir moddir
+end
+
+template baseconfig do
+  owner node.root_user
+  group node.root_group
+  mode '0644'
+  notifies :verify, 'fb_apache_verify_configs[doit]', :before
+  notifies :reload, 'service[apache]'
 end
 
 template "#{moddir}/fb_modules.conf" do
@@ -193,7 +216,6 @@ template "#{confdir}/status.conf" do
   owner node.root_user
   group node.root_group
   mode '0644'
-  variables(:location => '/server-status')
   notifies :verify, 'fb_apache_verify_configs[doit]', :before
   notifies :restart, 'service[apache]'
 end
@@ -221,6 +243,12 @@ if node['platform_family'] == 'debian'
   link "#{sitesdir}/000-default.conf" do
     only_if { node['fb_apache']['enable_default_site'] }
     to '../sites-available/000-default.conf'
+  end
+
+  %w{charset localized-error-pages other-vhosts-access-log security serve-cgi-bin}.each do |file|
+    file "#{confdir}/#{file}.conf" do
+      action :delete
+    end
   end
 end
 

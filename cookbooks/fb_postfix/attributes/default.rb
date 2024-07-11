@@ -23,18 +23,11 @@ else
   map_type = 'hash'
 end
 
-default['fb_postfix'] = {
-  'enable' => true,
-  'mask_service' => false,
-  'aliases' => {},
-  'access' => {},
-  'canonical' => {},
-  'etrn_access' => {
-    '127.0.0.1' => 'OK',
+main_cf = value_for_platform_family(
+  'debian' => {
+    'compatibility_level' => '3.6',
   },
-  'local_access' => {},
-  'localdomains' => [],
-  'main.cf' => {
+  'default' => {
     'daemon_directory' => '/usr/libexec/postfix',
     'queue_directory' => '/var/spool/postfix',
     'mail_owner' => 'postfix',
@@ -115,6 +108,20 @@ default['fb_postfix'] = {
     # Postfix will interpret this to be hostname
     'smtp_helo_name' => '$myhostname',
   },
+)
+
+default['fb_postfix'] = {
+  'enable' => true,
+  'mask_service' => false,
+  'aliases' => {},
+  'access' => {},
+  'canonical' => {},
+  'etrn_access' => {
+    '127.0.0.1' => 'OK',
+  },
+  'local_access' => {},
+  'localdomains' => [],
+  'main.cf' => main_cf,
   # master.cf as per http://www.postfix.org/master.5.html
   # In master.cf, unique by service:type and not just service.
   'master.cf' => {
