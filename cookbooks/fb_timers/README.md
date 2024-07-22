@@ -52,6 +52,11 @@ A global attribute `node['fb_timers']['enable_named_slices']` controls whether
 the timer units that systemd sets up will be bound to an individual slice,
 versus using `timers.slice` for everything.
 
+This cookbook does not setup timers until `node.firstboot_any_phase?`
+phases are complete. This is due to timers not being required to bootstrap
+a new system. If you have a lot of timers, this cookbook can eat up a lot of
+first boot runtime.
+
 ### Fields
 Required fields:
 
@@ -123,8 +128,6 @@ whatever you're doing.
 * `autostart`: Setting this to false will prevent units from being enabled and
   started in the chef run.  This can be used for creating user units which are
   managed by other means. (defaults to `true`)
-* `requires_enable`: Setting this to false will prevent including the `Requires`
-  field in the timer unit file. (defaults to `true`)
 
 ### Common Calendar Patterns
 A helper library is provided to allow easy generation of [systemd calendar

@@ -1,8 +1,4 @@
-#
-# Cookbook Name:: fb_smartctl
-# Recipe:: default
-#
-# Copyright (c) 2021-present, Facebook, Inc.
+# Copyright (c) 2022-present, Meta, Inc.
 # All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+description 'Helper rule to show existence of a resource file'
+keys %w{
+  resource
+}
 
-if node.macos?
-  include_recipe 'fb_smartctl::osx'
+def output
+  true
 end

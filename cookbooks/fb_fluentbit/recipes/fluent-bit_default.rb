@@ -65,8 +65,8 @@ directory 'runtime state directory' do
   if node.windows?
     rights :full_control, 'Administrators'
   else
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0755'
   end
 end
@@ -74,7 +74,7 @@ end
 include_recipe 'fb_fluentbit::fluent-bit_rhel' if node.rhel_family?
 include_recipe 'fb_fluentbit::fluent-bit_windows' if node.windows?
 
-template 'plugins config' do # ~FB031
+template 'plugins config' do
   action :create
   source 'plugins.conf.erb'
   path plugins_file_path
@@ -82,14 +82,14 @@ template 'plugins config' do # ~FB031
     rights :full_control, 'Administrators'
     notifies :restart, 'windows_service[FluentBit]'
   else
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0600'
     notifies :restart, 'service[fluent-bit]'
   end
 end
 
-template 'parsers config' do # ~FB031
+template 'parsers config' do
   action :create
   source 'parsers.conf.erb'
   path parsers_file_path
@@ -97,8 +97,8 @@ template 'parsers config' do # ~FB031
     rights :full_control, 'Administrators'
     notifies :restart, 'windows_service[FluentBit]'
   else
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0600'
     notifies :restart, 'service[fluent-bit]'
   end
@@ -113,14 +113,14 @@ remote_file 'remote config' do
     rights :full_control, 'Administrators'
     notifies :restart, 'windows_service[FluentBit]'
   else
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0600'
     notifies :restart, 'service[fluent-bit]'
   end
 end
 
-template 'local config' do # ~FB031
+template 'local config' do
   not_if { node['fb_fluentbit']['external_config_url'] }
   action :create
   source 'conf.erb'
@@ -129,8 +129,8 @@ template 'local config' do # ~FB031
     rights :full_control, 'Administrators'
     notifies :restart, 'windows_service[FluentBit]'
   else
-    owner 'root'
-    group 'root'
+    owner node.root_user
+    group node.root_group
     mode '0600'
     notifies :restart, 'service[fluent-bit]'
   end
@@ -138,10 +138,31 @@ end
 
 if node.windows?
   windows_service 'FluentBit' do
-    action :nothing
     if node['fb_fluentbit']['custom_svc_restart_command']
       restart_command node['fb_fluentbit']['custom_svc_restart_command']
     end
+    action :nothing
+  end
+
+  # We've seen a bunch of chef failures around the next part failing because something
+  # notified the service, but the service comes back in stop pending... this is because the
+  # custom restart command doens't actually wait for the service to stop, presumably by design.
+  # In fluentd, this was worked around by just killing it with fire if we got here, which...
+  # isn't great.  Normally how we'd handle this, is by putting a bunch of retries on the service
+  # start, but that's also not great because sometimes the service _does_ fail, at which point
+  # you're waiting minutes for a chef error... but we _also_ know that if we're in stop_pending,
+  # the service _was_ up,a nd is coming from a restart command, and hence the service _will_
+  # be up again, so we can just not do this in that case... at the very worst, it'll pick
+  # up next chef run, but that situation should never actually happen, and in reality it should
+  # always come back.
+  windows_service 'Keep Fluentbit Active' do
+    service_name 'FluentBit'
+    only_if { node['fb_fluentbit']['keep_alive'] }
+    not_if do
+      !::Win32::Service.exists?('fluentbit') ||
+            ::Win32::Service.status('fluentbit').current_state.downcase == 'stop pending'
+    end
+    action [:enable, :start]
   end
 else
   service 'fluent-bit' do

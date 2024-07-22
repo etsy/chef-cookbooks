@@ -19,7 +19,7 @@
 # limitations under the License.
 #
 
-if node.platform_family?('rhel') || node.platform_family?('fedora')
+if node.rhel_family? || node.fedora_family?
   chrony_svc = 'chronyd'
   chrony_conf = '/etc/chrony.conf'
   chrony_user = 'chrony'
@@ -41,11 +41,11 @@ directory '/var/run/chrony' do
   mode '0750'
 end
 
-template 'chrony.conf' do # ~FB031
+template 'chrony.conf' do
   path chrony_conf
   source 'chrony.conf.erb'
-  owner 'root'
-  group 'root'
+  owner node.root_user
+  group node.root_group
   mode '0644'
   notifies :restart, 'service[chrony]'
 end
