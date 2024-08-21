@@ -27,4 +27,6 @@ template '/etc/resolv.conf' do
   owner node.root_user
   group node.root_group
   mode '0644'
+  force_unlink true
+  manage_symlink_source false
 end
