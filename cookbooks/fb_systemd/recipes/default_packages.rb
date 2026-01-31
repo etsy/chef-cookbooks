@@ -77,7 +77,7 @@ package 'systemd packages' do
         systemd_packages << 'systemd-container'
       end
     end
-    systemd_packages
+    systemd_packages.uniq
   }
   only_if { node['fb_systemd']['manage_systemd_packages'] }
   action :upgrade
