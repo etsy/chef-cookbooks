@@ -89,6 +89,20 @@ Dir.glob(::File.join(FB::SSH.confdir(node), '*key')).each do |f|
   end
 end
 
+# On Debian-family systems, openssh 9.6+ checks for /run/sshd even in config-test
+# (-t) mode. When the openssh packages above are upgraded, dpkg post-install scripts
+# restart sshd asynchronously via deb-systemd-invoke, causing systemd to briefly
+# remove /run/sshd (a RuntimeDirectory, cleaned up on service stop). By the time
+# this resource runs, the stop phase has completed. Ensure the directory exists so
+# the sshd_config template verify below succeeds.
+# See: https://github.com/facebook/chef-cookbooks/pull/58
+directory '/run/sshd' do
+  owner 'root'
+  group node.root_group
+  mode '0755'
+  not_if { node.windows? }
+end
+
 template ::File.join(FB::SSH.confdir(node), 'sshd_config') do
   source 'ssh_config.erb'
   unless node.windows?
