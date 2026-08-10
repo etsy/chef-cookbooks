@@ -1,0 +1,21 @@
+<%
+  require 'yaml'
+
+  listeners = node['fb_envoy']['listeners'].map do |name, cfg|
+    { 'name' => name }.merge(cfg.to_hash)
+  end
+
+  clusters = node['fb_envoy']['clusters'].map do |name, cfg|
+    { 'name' => name }.merge(cfg.to_hash)
+  end
+
+  data = {
+    'static_resources' => {
+      'listeners' => listeners,
+      'clusters'  => clusters,
+    },
+    'admin' => node['fb_envoy']['admin'].to_hash,
+  }
+%>
+# This file is managed by Chef. Do not edit by hand.
+<%= data.to_yaml.sub(/\A---\n/, '') -%>

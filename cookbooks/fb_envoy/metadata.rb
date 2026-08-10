@@ -1,0 +1,11 @@
+# Copyright (c) 2026-present, Etsy, Inc.
+name 'fb_envoy'
+maintainer 'Etsy'
+maintainer_email 'gcp-chef-maintainers@etsy.com'
+license 'Apache-2.0'
+description 'Installs/Configures Envoy as a systemd service'
+version '0.1.0'
+supports 'ubuntu'
+supports 'debian'
+depends 'fb_helpers'
+depends 'fb_systemd'

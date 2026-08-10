@@ -1,0 +1,14 @@
+# This file is managed by Chef. Do not edit by hand.
+[Unit]
+Description=Envoy Proxy
+Documentation=https://www.envoyproxy.io/
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/envoy -c /etc/envoy/envoy.yaml
+Restart=on-failure
+RestartSec=5s
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
