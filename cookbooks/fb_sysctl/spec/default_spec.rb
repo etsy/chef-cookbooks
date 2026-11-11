@@ -47,4 +47,44 @@ recipe 'fb_sysctl::default' do |tc|
         with_content(tc.fixture('sysctl.conf'))
     end
   end
+
+  context 'sysctl.d compatibility link' do
+    let(:link_path) { '/etc/sysctl.d/99-sysctl.conf' }
+
+    def stub_sysctl_d(exists)
+      allow(::Dir).to receive(:exist?).and_call_original
+      allow(::Dir).to receive(:exist?).with('/etc/sysctl.d').and_return(exists)
+    end
+
+    it 'links /etc/sysctl.d/99-sysctl.conf to ../sysctl.conf on non-container Linux' do
+      stub_sysctl_d(true)
+      chef_run = tc.chef_run
+      chef_run.converge(described_recipe)
+
+      if chef_run.node.linux?
+        expect(chef_run).to create_link(link_path).with(:to => '../sysctl.conf')
+      else
+        expect(chef_run).not_to create_link(link_path)
+      end
+    end
+
+    it 'does not create the link in a container' do
+      stub_sysctl_d(true)
+      chef_run = tc.chef_run do |node|
+        node.default['virtualization']['role'] = 'guest'
+        node.default['virtualization']['system'] = 'lxc'
+      end
+      chef_run.converge(described_recipe)
+
+      expect(chef_run).not_to create_link(link_path)
+    end
+
+    it 'does not create the link when /etc/sysctl.d does not exist' do
+      stub_sysctl_d(false)
+      chef_run = tc.chef_run
+      chef_run.converge(described_recipe)
+
+      expect(chef_run).not_to create_link(link_path)
+    end
+  end
 end

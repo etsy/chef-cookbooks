@@ -25,6 +25,17 @@ template '/etc/sysctl.conf' do
   source 'sysctl.conf.erb'
 end
 
+# Debian and Ubuntu used to ship /etc/sysctl.d/99-sysctl.conf, a symlink to
+# /etc/sysctl.conf, because systemd-sysctl no longer reads /etc/sysctl.conf
+# natively. Newer releases (e.g. Ubuntu 26.04, procps >= 2:4.0.4-5) dropped it,
+# so without it nothing applies /etc/sysctl.conf at boot. Provide it ourselves.
+# The target matches the one procps shipped, so this is a no-op where the
+# package already provides the link.
+link '/etc/sysctl.d/99-sysctl.conf' do
+  to '../sysctl.conf'
+  only_if { node.linux? && !node.container? && ::Dir.exist?('/etc/sysctl.d') }
+end
+
 fb_sysctl 'doit' do
   not_if { node.container? }
   action :apply
